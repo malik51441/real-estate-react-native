@@ -1,5 +1,5 @@
 import icons from "./icons";
-import images from "./images";
+import images from "./defaultImages";
 
 export const cards = [
   {

@@ -1,6 +1,7 @@
 import {Account, Avatars, Client, OAuthProvider} from "react-native-appwrite"
 import * as Linking from 'expo-linking';
 import {openAuthSessionAsync} from "expo-web-browser";
+import { API_URL } from './config';
 
 
 export const config = {
@@ -66,7 +67,6 @@ export async function getCurrentUser() {
         const result = await account.get();
         if (result.$id) {
             const userAvatar = avatar.getInitials(result.name);
-
             return {
                 ...result,
                 avatar: userAvatar.toString(),
@@ -79,3 +79,53 @@ export async function getCurrentUser() {
         return null;
     }
 }
+
+export interface PropertyImage {
+    id: number;
+    propertyId: number;
+    originalUrl: string;
+    thumbnailUrl: string;
+    mediumUrl: string;
+    largeUrl: string;
+    imageOrder: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Property {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    location: string;
+    propertyType: string;
+    bedrooms: number;
+    bathrooms: number;
+    areaSqMeters: number;
+    dealerId: number;
+    createdAt: string;
+    updatedAt: string;
+    isActive: boolean;
+    images: PropertyImage[];
+    referenceNumber: string;
+}
+
+// @ts-ignore
+export async function getAllProperties(): Promise<Property[]> {
+    try {
+        const response = await fetch(`${API_URL}/api/properties`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch properties');
+        }
+        const data = await response.json();
+        console.log('Fetched properties:', data);
+        return data;
+    } catch (error) {
+        console.error('Error fetching properties:', error);
+        throw error;
+    }
+}
+
+
+
+

@@ -1,65 +1,108 @@
-import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from "react-native";
-import { Link } from "expo-router";
-import images from "@/constants/images";
+import {Button, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View} from "react-native";
+import {Link, router} from "expo-router";
+import images from "@/constants/defaultImages";
 import icons from "@/constants/icons";
 import Search from "@/components/Search";
 import { Card, FeaturedCard } from "@/components/Cards";
 import { Filters } from "@/components/Filters";
+import {useGlobalContext} from "@/lib/global-provider";
+import { getAllProperties, Property } from "@/lib/propertyService";
+import { useState, useEffect } from "react";
 
 export default function Index() {
+    const {user} = useGlobalContext();
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchProperties();
+    }, []);
+
+    const fetchProperties = async () => {
+        try {
+            const data = await getAllProperties();
+            setProperties(data);
+        } catch (error) {
+            console.error('Error fetching properties:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCardPress = (id: number) => router.push(`/properties/${id}`);
+
     return (
         <SafeAreaView className="bg-white h-full" style={{ flex: 1 }}>
             <FlatList
                 style={{ flex: 1 }}
-                data={[1, 2, 3]}
-                renderItem={({ item }) => <Card />}
-                keyExtractor={(item) => item.toString()}
+                data={properties}
+                renderItem={({ item }) => (
+                    <Card
+                        item={item}
+                        onPress={() => handleCardPress(item.id)}
+                    />
+                )}
+                keyExtractor={(item) => item.id.toString()}
                 numColumns={2}
                 contentContainerClassName='pb-32'
                 showsVerticalScrollIndicator={false}
                 columnWrapperClassName='flex gap-5 px-5'
-                ListHeaderComponent={             <View className="px-5">
-                    <View className="flex flex-row items-center justify-between mt-5">
-                        <View className="flex flex-row items-center">
-                            <Image source={images.avatar} className="size-12 rounded-full" />
-                            <View className="flex flex-col items-start ml-2 justify-center">
-                                <Text className="text-xs font-rubik text-black-100">Good Morning</Text>
-                                <Text className="text-base font-rubik-medium text-black-300">Maliek Borwin</Text>
+                ListHeaderComponent={
+                    <View className="px-5">
+                        <View className="flex flex-row items-center justify-between mt-5">
+                            <View className="flex flex-row items-center">
+                                <Image source={{uri: user?.avatar}} className="size-12 rounded-full" />
+                                <View className="flex flex-col items-start ml-2 justify-center">
+                                    <Text className="text-xs font-rubik text-black-100">Good Morning</Text>
+                                    <Text className="text-base font-rubik-medium text-black-300">{user?.name}</Text>
+                                </View>
                             </View>
+                            <Image source={icons.bell} className="size-6" />
                         </View>
-                        <Image source={icons.bell} className="size-6" />
-                    </View>
-                    <Search />
-                    <View className="my-5">
+                        <Search />
+                        <View className="my-5">
+                            <View className="flex flex-row items-center justify-between">
+                                <Text className="text-xl font-rubik-bold text-black-300">Featured</Text>
+                                <TouchableOpacity>
+                                    <Text className="text-base text-primary-300">See all</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <FlatList
+                                data={properties}
+                                renderItem={({item}) => (
+                                    <FeaturedCard
+                                        item= {item}
+                                        onPress={() => handleCardPress(item.id)}
+                                    />
+                                )}
+                                keyExtractor={(item) => item.id.toString()}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                bounces={false}
+                                contentContainerClassName='flex gap-5 mt-5'
+                            />
+                        </View>
                         <View className="flex flex-row items-center justify-between">
-                            <Text className="text-xl font-rubik-bold text-black-300">Featured</Text>
+                            <Text className="text-xl font-rubik-bold text-black-300">Our Recommendation</Text>
                             <TouchableOpacity>
                                 <Text className="text-base text-primary-300">See all</Text>
                             </TouchableOpacity>
                         </View>
-                        <FlatList
-                            data={[1,2,3]}
-                            renderItem={({item}) => {
-                                return <FeaturedCard />
-                            }}
-                            keyExtractor={(item) => item.toString()}
-                            horizontal
-                            />
-                        <View className="flex flex-row gap-5 mt-5">
+                        <Filters />
+                    </View>
+                }
+                ListEmptyComponent={
+                    loading ? (
+                        <View className="flex-1 justify-center items-center py-20">
+                            <Text>Loading properties...</Text>
                         </View>
-                    </View>
-                    <View className="flex flex-row items-center justify-between">
-                        <Text className="text-xl font-rubik-bold text-black-300">Our Recommendation</Text>
-                        <TouchableOpacity>
-                            <Text className="text-base text-primary-300">See all</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <Filters />
-                    <View className="flex flex-row gap-5 mt-5">
-                    </View>
-                </View>}
+                    ) : (
+                        <View className="flex-1 justify-center items-center py-20">
+                            <Text>No properties found</Text>
+                        </View>
+                    )
+                }
             />
-
         </SafeAreaView>
     );
 }
