@@ -1,33 +1,46 @@
-import {Button, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View} from "react-native";
-import {Link, router} from "expo-router";
+import {ActivityIndicator, Button, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View} from "react-native";
+import {Link, router, useLocalSearchParams} from "expo-router";
 import images from "@/constants/defaultImages";
 import icons from "@/constants/icons";
 import Search from "@/components/Search";
 import { Card, FeaturedCard } from "@/components/Cards";
 import { Filters } from "@/components/Filters";
 import {useGlobalContext} from "@/lib/global-provider";
-import { getAllProperties, Property } from "@/lib/propertyService";
+import {getAllProperties, getLatestProperties, Property} from "@/lib/propertyService";
 import { useState, useEffect } from "react";
+import NoResults from "@/components/noResults";
+import {useFetch} from "@/lib/useFetch";
 
 export default function Index() {
     const {user} = useGlobalContext();
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [loading, setLoading] = useState(true);
+    const params = useLocalSearchParams<{ query?: string; filter?: string }>();
+
+    const { data: featuredProperties, loading: featuredPropertiesLoading } =
+        useFetch({
+            fn: getLatestProperties,
+        });
+
+    const {
+        data: properties,
+        refetch,
+        loading,
+    } = useFetch({
+        fn: getAllProperties,
+        params: {
+            filter: params.filter!,
+            query: params.query!,
+            limit: 6,
+        },
+        skip: true,
+    });
 
     useEffect(() => {
-        fetchProperties();
-    }, []);
-
-    const fetchProperties = async () => {
-        try {
-            const data = await getAllProperties();
-            setProperties(data);
-        } catch (error) {
-            console.error('Error fetching properties:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        refetch({
+            filter: params.filter!,
+            query: params.query!,
+            limit: 6,
+        });
+    }, [params.filter, params.query]);
 
     const handleCardPress = (id: number) => router.push(`/properties/${id}`);
 
@@ -47,6 +60,11 @@ export default function Index() {
                 contentContainerClassName='pb-32'
                 showsVerticalScrollIndicator={false}
                 columnWrapperClassName='flex gap-5 px-5'
+                ListEmptyComponent={
+                        loading ? (
+                        <ActivityIndicator size='large' className='text-primary-300'/>
+                        ) : (<NoResults/>)
+            }
                 ListHeaderComponent={
                     <View className="px-5">
                         <View className="flex flex-row items-center justify-between mt-5">
@@ -68,7 +86,7 @@ export default function Index() {
                                 </TouchableOpacity>
                             </View>
                             <FlatList
-                                data={properties}
+                                data={featuredProperties}
                                 renderItem={({item}) => (
                                     <FeaturedCard
                                         item= {item}
@@ -90,17 +108,6 @@ export default function Index() {
                         </View>
                         <Filters />
                     </View>
-                }
-                ListEmptyComponent={
-                    loading ? (
-                        <View className="flex-1 justify-center items-center py-20">
-                            <Text>Loading properties...</Text>
-                        </View>
-                    ) : (
-                        <View className="flex-1 justify-center items-center py-20">
-                            <Text>No properties found</Text>
-                        </View>
-                    )
                 }
             />
         </SafeAreaView>

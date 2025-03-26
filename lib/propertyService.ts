@@ -1,4 +1,3 @@
-import {composeNode} from "yaml/dist/compose/compose-node";
 
 export interface PropertyImage {
     id: number;
@@ -30,28 +29,63 @@ export interface Property {
     referenceNumber: string;
 }
 
-export async function getAllProperties(): Promise<Property[]> {
+interface GetPropertiesParams {
+    filter?: string;    // For property type filtering
+    query?: string;     // For search query
+    limit?: number;     // For pagination
+    offset?: number;    // For pagination
+}
+
+export async function getAllProperties(params: GetPropertiesParams = {}): Promise<Property[]> {
     try {
-        const response = await fetch('http://192.168.1.229:8080/api/properties');
+        // Build query parameters
+        const queryParams = new URLSearchParams();
+
+        if (params.filter) {
+            queryParams.append('propertyType', params.filter);
+        }
+
+        if (params.query) {
+            queryParams.append('search', params.query);
+        }
+
+        if (params.limit) {
+            queryParams.append('limit', params.limit.toString());
+        }
+
+        if (params.offset) {
+            queryParams.append('offset', params.offset.toString());
+        }
+
+        // Build URL with query parameters
+        const baseUrl = 'http://192.168.1.229:8080/api/properties';
+        const url = `${baseUrl}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+
+        console.log('Fetching properties from:', url); // Debug log
+
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Failed to fetch properties');
         }
-        const data: Property[] = await response.json();
-        console.log('Fetched properties:', data);
-
-        // Iterate over each property and log the mediumUrl of each image
-        data.forEach((property) => {
-            if (property.images && Array.isArray(property.images)) {
-                const mediumUrls = property.images.map((image) => image.mediumUrl);
-                console.log(`Property ${property.id} medium URLs:`, mediumUrls);
-            } else {
-                console.log(`Property ${property.id} has no images or images is not an array`);
-            }
-        });
-
+        const data = await response.json();
         return data;
     } catch (error) {
         console.error('Error fetching properties:', error);
+        throw error;
+    }
+}
+
+// Separate function for latest properties
+export async function getLatestProperties(): Promise<Property[]> {
+    try {
+        const response = await fetch('http://192.168.1.229:8080/api/properties');
+        if (!response.ok) {
+            throw new Error('Failed to fetch latest properties');
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching latest properties:', error);
         throw error;
     }
 }
