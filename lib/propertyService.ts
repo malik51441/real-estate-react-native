@@ -1,4 +1,3 @@
-
 export interface PropertyImage {
     id: number;
     propertyId: number;
@@ -89,3 +88,39 @@ export async function getLatestProperties(): Promise<Property[]> {
         throw error;
     }
 }
+
+export async function uploadProperty(formData: any): Promise<Property[]> {
+    try {
+        const response = await fetch('http://192.168.1.229:8080/api/properties', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create property');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching latest properties:', error);
+        throw error;
+    }
+}
+
+export async function getPropertyById(params: { id: number }): Promise<Property> {
+    try {
+        const response = await fetch(`http://192.168.1.229:8080/api/properties/${params.id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch property');
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching property:', error);
+        throw error;
+    }
+}
+

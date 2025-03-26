@@ -80,6 +80,18 @@ const TabsLayout = () => {
                     )
                 }}
             />
+            <Tabs.Screen
+                name="dashboard"
+                options={{
+                    title: 'Dashboard',
+                    headerShown: false,
+                    tabBarIcon: ({focused}) => (
+                        <TabIcon icon={icons.wallet}
+                                 focused={focused}
+                                 title="Dashboard"/>
+                    )
+                }}
+            />
         </Tabs>
     );
 };
